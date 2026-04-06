@@ -1,6 +1,6 @@
 import unittest
 from textnode import TextNode, TextType
-from markdown import split_nodes_delimiter
+from markdown import split_nodes_delimiter, extract_markdown_images, extract_markdown_links
 
 class TestMarkdown(unittest.TestCase):
     nodes_bold = [
@@ -61,3 +61,24 @@ class TestMarkdown(unittest.TestCase):
                 TextNode("This is markdown.", TextType.TEXT)
             ]
         )
+
+    def test_extract_markdown_images(self):
+        matches = extract_markdown_images(
+            "This is text with an ![image](https://i.imgur.com/zjjcJKZ.png)"
+        )
+        self.assertListEqual([("image", "https://i.imgur.com/zjjcJKZ.png")], matches)
+
+        matches = extract_markdown_images(
+            "This is text with an ![image](https://i.imgur.com/zjjcJKZ.png). Actually, ![I LIED!](https://test.org/image1.png) I HAVE MULTIPLE ![MUWAHAHAHA](https://test.org/image2.png)"
+        )
+        self.assertListEqual([("image", "https://i.imgur.com/zjjcJKZ.png"), ("I LIED!", "https://test.org/image1.png"), ("MUWAHAHAHA", "https://test.org/image2.png")], matches)
+
+        matches = extract_markdown_links(
+            "This is text with an [image](https://i.imgur.com/zjjcJKZ.png)"
+        )
+        self.assertListEqual([("image", "https://i.imgur.com/zjjcJKZ.png")], matches)
+
+        matches = extract_markdown_links(
+            "This is text with an [image](https://i.imgur.com/zjjcJKZ.png). Actually, [I LIED!](https://test.org/image1.png) I HAVE MULTIPLE [MUWAHAHAHA](https://test.org/image2.png)"
+        )
+        self.assertListEqual([("image", "https://i.imgur.com/zjjcJKZ.png"), ("I LIED!", "https://test.org/image1.png"), ("MUWAHAHAHA", "https://test.org/image2.png")], matches)
