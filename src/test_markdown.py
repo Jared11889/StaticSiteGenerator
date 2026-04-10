@@ -1,6 +1,6 @@
 import unittest
 from textnode import TextNode, TextType
-from markdown import split_nodes_delimiter, extract_markdown_images, extract_markdown_links, split_nodes_image, split_nodes_link, text_to_textnodes
+from markdown import BlockType, split_nodes_delimiter, extract_markdown_images, extract_markdown_links, split_nodes_image, split_nodes_link, text_to_textnodes, markdown_to_blocks, block_to_block_type
 
 class TestMarkdown(unittest.TestCase):
     nodes_bold = [
@@ -179,3 +179,55 @@ class TestMarkdown(unittest.TestCase):
         self.assertListEqual(text_to_textnodes(text2), nodes2)
         self.assertListEqual(text_to_textnodes(text3), nodes3)
 
+    def test_markdown_to_blocks(self):
+        md = """
+This is **bolded** paragraph
+
+This is another paragraph with _italic_ text and `code` here
+This is the same paragraph on a new line
+
+- This is a list
+- with items
+"""
+        blocks = markdown_to_blocks(md)
+        self.assertEqual(
+            blocks,
+            [
+                "This is **bolded** paragraph",
+                "This is another paragraph with _italic_ text and `code` here\nThis is the same paragraph on a new line",
+                "- This is a list\n- with items",
+            ],
+        )
+
+    def test_block_to_block_type(self):
+        paragraph = "This is a paragraph, \nfor sure."
+        heading1 = "# Heading1"
+        heading2 = "###### Heading2"
+        heading3_fail = "#Heading3"
+        code1 = "```\n 1337 code goes here ch00m```"
+        code2_fail = "```n00blet code forgets its newline```"
+        quote1 = ">With great power comes great responsibility \n> - _Captain Picard_"
+        quote2 = "> You're a wizard, Harry\n> - _Gandalf the Great_"
+        quote3_fail = "> It is possible to commit no mistakes and still lose.\nThat is not weakness; that is life.\n - _Jean Luc Picard_"
+        unordered_list1 = "- thing 1\n- thing a\n- thing UNKNOWN"
+        unordered_list2 = "- this list was outcompeted by its larger packmates."
+        unordered_list3_fail = "-Sometimes you try\n-and fail because\n-you didn't rtfm"
+        ordered_list1 = "1. I'm thing 1\n2. And I'm thing 2"
+        ordered_list2_fail = "5. This list doesn't\n 9. understand the ordinality of natural numbers"
+        ordered_list3_fail = "1.Someone didn't read the documentation"
+
+        self.assertEqual(block_to_block_type(paragraph), BlockType.PARAGRAPH)
+        self.assertEqual(block_to_block_type(heading1), BlockType.HEADING)
+        self.assertEqual(block_to_block_type(heading2), BlockType.HEADING)
+        self.assertEqual(block_to_block_type(heading3_fail), BlockType.PARAGRAPH)
+        self.assertEqual(block_to_block_type(code1), BlockType.CODE)
+        self.assertEqual(block_to_block_type(code2_fail), BlockType.PARAGRAPH)
+        self.assertEqual(block_to_block_type(quote1), BlockType.QUOTE)
+        self.assertEqual(block_to_block_type(quote2), BlockType.QUOTE)
+        self.assertEqual(block_to_block_type(quote3_fail), BlockType.PARAGRAPH)
+        self.assertEqual(block_to_block_type(unordered_list1), BlockType.UNORDERED_LIST)
+        self.assertEqual(block_to_block_type(unordered_list2), BlockType.UNORDERED_LIST)
+        self.assertEqual(block_to_block_type(unordered_list3_fail), BlockType.PARAGRAPH)
+        self.assertEqual(block_to_block_type(ordered_list1), BlockType.ORDERED_LIST)
+        self.assertEqual(block_to_block_type(ordered_list2_fail), BlockType.PARAGRAPH)
+        self.assertEqual(block_to_block_type(ordered_list3_fail), BlockType.PARAGRAPH)
